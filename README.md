@@ -1,3 +1,18 @@
+This is my modified solution to the project.
+
+The header PA1_template.Rmd file was modified slightly to make the knit2html()
+function work properly on my machine.  It was unhappy with the file supplied
+and wanted to use a different package to process the input file.
+
+All other files are unchanged.
+
+Just for my reference later:
+  * library(knitr)
+  * knit2html("PA1_template.Rmd")
+
+
+## Copied README.md
+
 ## Introduction
 
 It is now possible to collect a large amount of data about personal

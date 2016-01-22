@@ -18,30 +18,56 @@ The [dataset](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zi
 
 The data set is a csv file with a total of 17,568 observations.
 
-   ```{r echo=FALSE}
-   # Note to Self : process this document with 
-   # library(knitr)
-   # knit2html("PA1_template.Rmd")
-   ``` 
+
 
 ## Load and preprocess the data
    Show all code necessary to:
 
    1. *Load the data (ie **read.csv()**)*
 
-       ```{r} 
+       
+       ```r
        unzip("activity.zip")
        rawData <- read.csv("activity.csv")
        file.remove("activity.csv")
-       ``` 
+       ```
+       
+       ```
+       ## [1] TRUE
+       ```
 
        Basic data overview
 
-       ```{r}
+       
+       ```r
        head(rawData)
+       ```
+       
+       ```
+       ##   steps       date interval
+       ## 1    NA 2012-10-01        0
+       ## 2    NA 2012-10-01        5
+       ## 3    NA 2012-10-01       10
+       ## 4    NA 2012-10-01       15
+       ## 5    NA 2012-10-01       20
+       ## 6    NA 2012-10-01       25
+       ```
+       
+       ```r
        summary(rawData)
        ```
-       There are indeed `r prettyNum(nrow(rawData), big.mark=',')` records.  **Note: This total was calculated with an in line r command, see .rmd file.**
+       
+       ```
+       ##      steps                date          interval     
+       ##  Min.   :  0.00   2012-10-01:  288   Min.   :   0.0  
+       ##  1st Qu.:  0.00   2012-10-02:  288   1st Qu.: 588.8  
+       ##  Median :  0.00   2012-10-03:  288   Median :1177.5  
+       ##  Mean   : 37.38   2012-10-04:  288   Mean   :1177.5  
+       ##  3rd Qu.: 12.00   2012-10-05:  288   3rd Qu.:1766.2  
+       ##  Max.   :806.00   2012-10-06:  288   Max.   :2355.0  
+       ##  NA's   :2304     (Other)   :15840
+       ```
+       There are indeed 17,568 records.  **Note: This total was calculated with an in line r command, see .rmd file.**
 
    1. *Process/transform the data (if necessary) into a format suitable for your analysis*
 
@@ -60,7 +86,8 @@ The data set is a csv file with a total of 17,568 observations.
 
        Start by computing the aggregate steps per day. 
 
-       ```{r 2A} 
+       
+       ```r
           stepsPerDay <- aggregate(rawData$steps, by=list(rawData$date), FUN=sum)
           library(plyr)
           stepsPerDay <- rename(stepsPerDay, c("Group.1" = "Day", "x"="Steps"))
@@ -68,21 +95,35 @@ The data set is a csv file with a total of 17,568 observations.
 
        Data overview:
 
-       ```{r}
+       
+       ```r
            head(stepsPerDay)
+       ```
+       
+       ```
+       ##          Day Steps
+       ## 1 2012-10-01    NA
+       ## 2 2012-10-02   126
+       ## 3 2012-10-03 11352
+       ## 4 2012-10-04 12116
+       ## 5 2012-10-05 13294
+       ## 6 2012-10-06 15420
        ```
 
    1. *If you do not understand the difference between a histogram and a barplot, research the difference between them.  Make a histogram of the total number of steps taken each day*
 
-       ```{r 2B} 
+       
+       ```r
        hist(stepsPerDay$Steps, breaks=20, xlab="Steps", main="Steps Per Day, Raw Data")
        ```
+       
+       ![plot of chunk 2B](figure/2B-1.png)
 
    1. *Calculate and report the mean and median of the total number of steps taken per day.*
 
-       Mean steps per day `r prettyNum(mean(stepsPerDay$Steps, na.rm=TRUE), big.mark=',', scientific=FALSE) `
+       Mean steps per day 10,766.19
 
-       Median steps per day `r prettyNum(median(stepsPerDay$Steps, na.rm=TRUE),big.mark=',')`
+       Median steps per day 10,765
 
        **Note: both of the above  were calculated with in line r code, that is just too cool!**
 
@@ -92,30 +133,35 @@ The data set is a csv file with a total of 17,568 observations.
 
 	Start off by aggregating the steps per interval.
 
-	```{r 3A}
+	
+	```r
 	stepsPerInterval <- aggregate(rawData$steps, by=list(rawData$interval), FUN=mean, na.rm=TRUE)
 	stepsPerInterval <- rename(stepsPerInterval, c("Group.1" = "Interval", "x"="Steps"))
-
+	
 	# add a time field.  We only want the hour and minute 
 	# so just just the beginning of the epoch for the day.
 	stepsPerInterval$Time = as.POSIXct( as.integer(stepsPerInterval$Interval/100)*3600
- 			      +stepsPerInterval$Interval%%100*60, origin = "1970-01-01",tz="GMT")
+	 			      +stepsPerInterval$Interval%%100*60, origin = "1970-01-01",tz="GMT")
 	```
 
 	Now draw the graph
 
-	```{r fig.width=10}
+	
+	```r
 	plot(stepsPerInterval$Time, stepsPerInterval$Steps, 
 	      type="l", xlab="Time of Day", ylab="Steps", main="Average Steps by Time of Day")
 	```
+	
+	![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
 
    1. *Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?*
 
-    ```{r}
+    
+    ```r
     maxSteps = max(stepsPerInterval$Steps)
     maxWhen = format(stepsPerInterval[stepsPerInterval$Steps == max(stepsPerInterval$Steps),]$Time,"%H:%M")
     ```
-       The maximum average steps is `r  maxSteps`, at `r maxWhen`.
+       The maximum average steps is 206.1698113, at 08:35.
 
 ## Imputing missing values
 
@@ -123,16 +169,23 @@ The data set is a csv file with a total of 17,568 observations.
 
    1. *Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)*
 
-    ```{r}
+    
+    ```r
     myTot = 0;
     for (i in names(rawData)) {
         tot = sum(is.na(rawData[[i]]))
         cat (i , " has " , prettyNum(tot, big.mark=",") , "NAs\n")
         myTot <-  tot+ myTot
     }
-   ``` 
+    ```
+    
+    ```
+    ## steps  has  2,304 NAs
+    ## date  has  0 NAs
+    ## interval  has  0 NAs
+    ```
 
-   The total number of NAs in the data is `r prettyNum(myTot, big.mark=",")`.
+   The total number of NAs in the data is 2,304.
 
    1. *Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.*
 
@@ -140,7 +193,8 @@ The data set is a csv file with a total of 17,568 observations.
 
    1. *Create a new dataset that is equal to the original dataset but with the missing data filled in.*
 
-    ```{r}
+    
+    ```r
     # ok, so there is probably a better way to do this step in fixed format
     # but I don't know it and I am running out of time, 
     # besides, I spent a long time learning how to program.
@@ -149,7 +203,7 @@ The data set is a csv file with a total of 17,568 observations.
     #       replace the NA with a table lookup
     
     newData <- rawData
-  
+      
     for (i in 1:nrow(newData)) {
         if (is.na(newData[i,1])) {
           newData[i,1] <-  stepsPerInterval[stepsPerInterval$Interval==newData[i,3],2]
@@ -159,7 +213,8 @@ The data set is a csv file with a total of 17,568 observations.
 
 
    1. *Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?*
-    ```{r fig.width=10}
+    
+    ```r
     #aggregate the number of steps by day.
     newStepsPerDay <- aggregate(newData$steps, by=list(newData$date), FUN=sum)
     
@@ -170,19 +225,22 @@ The data set is a csv file with a total of 17,568 observations.
     par(mfrow=c(1,2))
     hist(newStepsPerDay$Steps, breaks=20, xlab="Steps", main="Steps Per Day, Missing Data Replaced")
     hist(stepsPerDay$Steps, breaks=20, xlab="Steps", main="Steps Per Day, Raw Data")
-   ```    
+    ```
+    
+    ![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png)
 
     As noted in the titles, the new histogram on the left has NAs replaced with the average value, while the one on the right was the raw data with NAs present.  As expected the number of days with the mean number of steps went up as it data appeared to be missing for full days.
 
-    ```{r}
+    
+    ```r
     # calculate the stats
     meanSteps = mean(stepsPerDay$Steps, na.rm=TRUE);
     medianSteps = median(stepsPerDay$Steps, na.rm=TRUE)
     newMeanSteps = mean(newStepsPerDay$Steps, na.rm=TRUE)
     newMedianSteps = median(newStepsPerDay$Steps, na.rm=TRUE)
-   ``` 
+    ```
 
-    In the original data the average per day is `r prettyNum(meanSteps, big.mark=",")` and the median is `r prettyNum(medianSteps,big.mark=",")`.  In the new data the average steps per day is `r prettyNum(newMeanSteps, big.mark=',')` and the new median is `r prettyNum(newMedianSteps, big.mark=',')`.  The mean changed by `r prettyNum(meanSteps-newMeanSteps,big.mark=',')` as expected, and the median changed by `r formatC(medianSteps-newMedianSteps,digits=3)`.
+    In the original data the average per day is 10,766.19 and the median is 10,765.  In the new data the average steps per day is 10,766.19 and the new median is 10,766.19.  The mean changed by 0 as expected, and the median changed by -1.19.
 
 ## Are there differences in activity patterns between weekdays and weekends?**
 
@@ -192,11 +250,12 @@ The data set is a csv file with a total of 17,568 observations.
 
    I decided to go back to using the raw data for this.  Replacing rawData with newData, computed above, would perform the same calculations with the NAs replaced.    If time permitted, it looks like this should be turned into a function as the code is essentially a repeat of the work above. 
 
-    ```{r}
+    
+    ```r
     # Add a new factor
     rawData$Day <- factor(weekdays(as.POSIXct(rawData[,2])))
     rawData$WeekEnd <- rawData[,4] %in% c("Saturday","Sunday")
-
+    
     # compute the data for weekends
     weekendData = rawData[rawData$WeekEnd,]
     weekendStepsPerInterval <- aggregate(weekendData$steps, 
@@ -204,7 +263,7 @@ The data set is a csv file with a total of 17,568 observations.
     weekendStepsPerInterval <- rename(weekendStepsPerInterval, c("Group.1" = "Interval", "x"="Steps"))
     weekendStepsPerInterval$Time = as.POSIXct(as.integer(weekendStepsPerInterval$Interval/100)*3600
           +weekendStepsPerInterval$Interval%%100*60, origin = "1970-01-01",tz="GMT")
-
+    
     # repeat for weekdays
     weekdayData = rawData[!rawData$WeekEnd,]
     weekdayStepsPerInterval <- aggregate(weekdayData$steps, 
@@ -217,12 +276,15 @@ The data set is a csv file with a total of 17,568 observations.
    1. *Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.*
 
 
-   ```{r fig.width=10}
+   
+   ```r
    par(mfrow=c(2,1))
    plot(weekdayStepsPerInterval$Time, weekdayStepsPerInterval$Steps, type="l", 
           xlab="Time of Day", ylab="Steps", main="Weekday Steps by Time of Day")
    plot(weekendStepsPerInterval$Time, weekendStepsPerInterval$Steps, type="l", 
           xlab="Time of Day", ylab="Steps", main="Weekend Steps by Time of Day")
    ```
+   
+   ![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12-1.png)
 
    It appears that there is a different activity pattern for weekends and weekdays.  The subject seems to be much more active for the entire day during a weekend.
